@@ -212,4 +212,8 @@ poetry.toml
 # LSP config files
 pyrightconfig.json
 
+# api 키 무시
+01-Basic/01-OpenAI-APIKey.ipynb
+
+
 # End of https://www.toptal.com/developers/gitignore/api/jupyternotebooks,python

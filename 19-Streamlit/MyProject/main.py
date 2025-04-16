@@ -6,6 +6,7 @@ from langchain_openai import ChatOpenAI  # llm
 from langchain_core.output_parsers import StrOutputParser  # Output Parser
 from langchain_core.prompts import load_prompt  # 프롬프트 로드
 from langchain import hub  # 허브
+import glob
 
 load_dotenv()  # API KEY 정보로드
 
@@ -21,9 +22,9 @@ with st.sidebar:
     # 초기화 버튼
     clear_btn = st.button("대화 초기화")
 
-    selected_prompt = st.selectbox(
-        "프롬프트를 선택해주세요", ("기본모드", "SNS 게시글", "요악"), index=0
-    )
+    prompt_files = glob.glob("prompts/*.yaml")
+    selected_prompt = st.selectbox("프롬프트를 선택해주세요", prompt_files, index=0)
+    task_input = st.text_input("TASK 입력", "")
 
 
 # 새로운 메시지 추가
@@ -38,24 +39,12 @@ def print_messages():
 
 
 # 체인 생성
-def create_chain(prompt_type):
-    # prompt | llm | output_parser
+def create_chain(prompt_filepath, task=""):
+    prompt = load_prompt(prompt_filepath, encoding="utf-8")
 
-    # prompt(기본모드)
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            (
-                "system",
-                "당신을 친절한 AI 어시스턴스 입니다. 다음 질문에 간결하게 답변해 주세요.",
-            ),
-            ("human", "#Question:\n{question}"),
-        ]
-    )
-
-    if prompt_type == "SNS 게시글":
-        prompt = load_prompt("prompts/sns.yaml", encoding="utf-8")
-    elif prompt_type == "요약":
-        prompt = hub.pull("teddynote/chain-of-density-map-korean")
+    if task:
+        # prompt | llm | output_parser
+        prompt = prompt.partial(task=task)
 
     # llm
     llm = ChatOpenAI(model="gpt-4o", temperature=0)
@@ -83,7 +72,7 @@ if user_input:
     # 웹에 대화 출력(이모지 사용)
     st.chat_message("user").write(user_input)
     # 체인 생성
-    chain = create_chain(selected_prompt)
+    chain = create_chain(selected_prompt, task=task_input)
 
     # 지피티처럼 답변이 계속해서 나오는 방법(스트리밍 호출)
     response = chain.stream({"question": user_input})
